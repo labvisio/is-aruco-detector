@@ -1,6 +1,6 @@
 CXX = clang++
-CXXFLAGS += -std=c++1z -Wall -Werror# -O2
-DEBUGFLAGS = -g  -fsanitize=address -fno-omit-frame-pointer 
+CXXFLAGS += -std=c++1z -Wall -Werror -O2
+DEBUGFLAGS = #-g  -fsanitize=address -fno-omit-frame-pointer 
 LDFLAGS += -L/usr/local/lib -I/usr/local/include `pkg-config --libs protobuf librabbitmq libSimpleAmqpClient opencv`\
            -Wl,--no-as-needed -Wl,--as-needed -ldl -lboost_system -lboost_chrono -lboost_program_options\
 					 -lboost_filesystem -lismsgs

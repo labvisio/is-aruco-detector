@@ -14,10 +14,10 @@
 
 using is::common::Tensor;
 using is::vision::MarkerSettings;
-using is::vision::MarkerAnnotations;
+using is::vision::ImageAnnotations;
 using is::vision::CameraCalibration;
 using is::vision::Image;
-using is::robot::Pose;
+using is::common::Pose;
 
 namespace fs = boost::filesystem;
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
   opt_add("calib,c", is::po::value<std::string>(&calib_dir)->default_value("./calibs"),
           "directory containing calibration files");
   opt_add("dictionary,d", is::po::value<int>(&dict_id)->default_value(0), "dictionary id");
-  opt_add("marker-length,l", is::po::value<float>(&marker_length)->required(), "marker length");
+  opt_add("marker-length,l", is::po::value<float>(&marker_length), "marker length");
   is::parse_program_options(argc, argv, opts);
 
   auto calibrations = load_calibrations(calib_dir);
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
       assert(ids.size() == corners.size());
 
       for (int i = 0; i < ids.size(); ++i) {
-        auto image_annotation = annotations->add_annotations()->mutable_image_annotation();
+        auto image_annotation = annotations->add_annotations();
         image_annotation->set_label(std::to_string(ids[i]));
         for (auto&& point : corners[i]) {
           auto vertex = image_annotation->mutable_region()->add_vertices();
@@ -171,14 +171,13 @@ int main(int argc, char** argv) {
       }
     };
 
-    MarkerAnnotations annotations;
+    ImageAnnotations annotations;
     auto corners = annotate_image(image, &annotations);
     annotate_pose(corners, &annotations);
 
     auto completion_time = is::current_time();
     is::info("Took: {} ms", is::pb::TimeUtil::DurationToMilliseconds(completion_time - start_time));
   
-    // annotations.PrintDebugString();
     is::publish(channel, fmt::format("ArUco.{}.Detection", id), annotations);
   }
 
