@@ -7,9 +7,9 @@
 #include <opencv2/imgproc.hpp>
 #include <unordered_map>
 
-using is::vision::ImageAnnotations;
-using is::vision::ImageAnnotation;
 using is::vision::Image;
+using is::vision::ImageAnnotation;
+using is::vision::ImageAnnotations;
 
 std::pair<std::string, std::string> parse_topic(std::string const& topic) {
   auto first_dot = topic.find_first_of('.');
@@ -59,11 +59,14 @@ void draw_annotations(cv::Mat image, ImageAnnotations const& annotations) {
 int main(int argc, char** argv) {
   std::string uri;
   float scale;
+  int draw_fps;
 
   is::po::options_description opts("Options");
   auto&& opt_add = opts.add_options();
   opt_add("uri,u", is::po::value<std::string>(&uri)->required(), "broker uri");
   opt_add("scale,s", is::po::value<float>(&scale)->default_value(1.0f), "scale");
+  opt_add("draw-fps,f", is::po::value<int>(&draw_fps)->default_value(10),
+          "fps that images will be drawn");
   is::parse_program_options(argc, argv, opts);
 
   auto channel = is::rmq::Channel::CreateFromUri(uri);
@@ -71,32 +74,36 @@ int main(int argc, char** argv) {
   std::vector<std::string> topics = {"CameraGateway.*.Frame", "ArUco.*.Detection"};
   is::subscribe(channel, tag, topics);
 
-  std::unordered_map<std::string, cv::Mat> images;
-  std::unordered_map<std::string, ImageAnnotations> annotations;
-
+  std::unordered_map<std::string, std::tuple<cv::Mat, ImageAnnotations>> map;
+  auto draw_deadline =
+      is::current_time() + is::pb::TimeUtil::MillisecondsToDuration(1000 / draw_fps);
   for (;;) {
-    auto envelope = channel->BasicConsumeMessage();
-    auto topic = envelope->RoutingKey();
-    std::string id, subtopic;
-    std::tie(id, subtopic) = parse_topic(topic);
+    for (;;) {
+      auto envelope = is::consume_until(channel, draw_deadline);
+      if (envelope == nullptr) break;
+      auto topic = envelope->RoutingKey();
+      std::string id, subtopic;
+      std::tie(id, subtopic) = parse_topic(topic);
 
-    if (subtopic == "Frame") {
-      auto maybe_image = is::unpack<Image>(envelope);
-      std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
-      auto image = cv::imdecode(coded, CV_LOAD_IMAGE_COLOR);
-      draw_annotations(image, annotations[id]);
-      images[id] = image;
-    } else if (subtopic == "Detection") {
-      auto maybe_annotations = is::unpack<ImageAnnotations>(envelope);
-      annotations[id] = *maybe_annotations;
+      if (subtopic == "Frame") {
+        auto maybe_image = is::unpack<Image>(envelope);
+        std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
+        auto image = cv::imdecode(coded, CV_LOAD_IMAGE_COLOR);
+        std::get<0>(map[id]) = image;
+      } else if (subtopic == "Detection") {
+        auto maybe_annotations = is::unpack<ImageAnnotations>(envelope);
+        std::get<1>(map[id]) = *maybe_annotations;
+      }
     }
 
     std::vector<cv::Mat> resized;
-    for (auto keyvalue : images) {
-      cv::Mat mat;
-      auto image = keyvalue.second;
-      cv::resize(image, mat, cv::Size(image.cols * scale, image.rows * scale));
-      resized.push_back(mat);
+    for (auto keyvalue : map) {
+      cv::Mat image;
+      ImageAnnotations annotations;
+      std::tie(image, annotations) = keyvalue.second;
+      draw_annotations(image, annotations);
+      cv::resize(image, image, cv::Size(image.cols * scale, image.rows * scale));
+      resized.push_back(image);
     }
 
     if (!resized.empty()) {
@@ -105,5 +112,7 @@ int main(int argc, char** argv) {
       cv::imshow("Detections", image);
       cv::waitKey(1);
     }
+
+    draw_deadline += is::pb::TimeUtil::MillisecondsToDuration(1000 / draw_fps);
   }
 }
