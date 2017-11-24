@@ -7,17 +7,17 @@
 #include <fstream>
 #include <is/is.hpp>
 #include <opencv2/aruco.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
 #include <vector>
 
+using is::common::Pose;
 using is::common::Tensor;
-using is::vision::MarkerSettings;
-using is::vision::ImageAnnotations;
 using is::vision::CameraCalibration;
 using is::vision::Image;
-using is::common::Pose;
+using is::vision::ImageAnnotations;
+using is::vision::MarkerSettings;
 
 namespace fs = boost::filesystem;
 
@@ -35,7 +35,7 @@ std::unordered_map<std::string, CameraCalibration> load_calibrations(std::string
       CameraCalibration calibration;
       if (entry.path().extension() == ".json" &&
           parse_json_file(entry.path().string(), &calibration).ok()) {
-        calibration.PrintDebugString();
+        is::info("Read calibration from {}: {}", entry.path().string(), calibration);
         calibrations.emplace(calibration.id(), calibration);
       }
     }
@@ -91,7 +91,8 @@ int main(int argc, char** argv) {
   opt_add("marker-length,l", is::po::value<float>(&marker_length), "marker length");
   is::parse_program_options(argc, argv, opts);
 
-  auto calibrations = load_calibrations(calib_dir);
+  std::unordered_map<std::string, CameraCalibration> calibrations;
+  if (marker_length > 0) calibrations = load_calibrations(calib_dir);
   auto detector_parameters = cv::aruco::DetectorParameters::create();
   detector_parameters->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
   auto dictionary =
@@ -99,11 +100,12 @@ int main(int argc, char** argv) {
 
   auto channel = is::rmq::Channel::CreateFromUri(uri);
   auto tag = is::consumer_id();
-  is::declare_queue(channel, service, tag, /*exclusive*/ false);
+  is::declare_queue(channel, service, tag, /*exclusive*/ false, /*prefetch*/ 1);
   is::subscribe(channel, service, "CameraGateway.*.Frame");
 
   for (;;) {
     auto envelope = channel->BasicConsumeMessage();
+    channel->BasicAck(envelope);
     auto maybe_image = is::unpack<Image>(envelope);
     if (!maybe_image) continue;
 
@@ -153,7 +155,7 @@ int main(int argc, char** argv) {
         cv::vconcat(tf, lastRow, tf);
 
         cv::Mat T = extrinsic * tf;
-        
+
         // // http://www.staff.city.ac.uk/~sbbh653/publications/euler.pdf
         auto pitch = -std::asin(T.at<double>(2, 0));
         auto yaw = std::atan2(T.at<double>(2, 1) / cos(pitch), T.at<double>(2, 2) / cos(pitch));
@@ -175,9 +177,7 @@ int main(int argc, char** argv) {
     auto corners = annotate_image(image, &annotations);
     annotate_pose(corners, &annotations);
 
-    auto completion_time = is::current_time();
-    is::info("Took: {} ms", is::pb::TimeUtil::DurationToMilliseconds(completion_time - start_time));
-  
+    is::info("Took: {} ms", is::current_time() - start_time);
     is::publish(channel, fmt::format("ArUco.{}.Detection", id), annotations);
   }
 
