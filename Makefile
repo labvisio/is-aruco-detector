@@ -9,7 +9,7 @@ LOCAL_PROTOS_PATH = ./msgs/
 
 vpath %.proto $(LOCAL_PROTOS_PATH)
 
-MAINTAINER = picoreti
+MAINTAINER = viros
 SERVICE = aruco
 VERSION = 1
 LOCAL_REGISTRY = git.is:5000

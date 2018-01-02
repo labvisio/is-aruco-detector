@@ -146,6 +146,11 @@ int main(int argc, char** argv) {
                                            tvecs);
 
       assert(rvecs.size() == tvecs.size() && rvecs.size() == corners.size());
+      
+      auto c0 = 3.0; // lower limmit
+      auto c1 = 5.0; // uppper limmit
+      auto k = 1.0 / (c1 - c0);
+      auto compute_score = [&](auto z){return z < c0 ? 1.0 : std::max(k*(c1 -z), 0.0);};
 
       for (int i = 0; i < corners.size(); ++i) {
         cv::Mat tf;
@@ -161,15 +166,18 @@ int main(int argc, char** argv) {
         auto yaw = std::atan2(T.at<double>(2, 1) / cos(pitch), T.at<double>(2, 2) / cos(pitch));
         auto roll = std::atan2(T.at<double>(1, 0) / cos(pitch), T.at<double>(0, 0) / cos(pitch));
 
-        auto pose = annotations->mutable_annotations(i)->mutable_pose();
+        auto annotation = annotations->mutable_annotations(i);
+        auto pose = annotation->mutable_pose();
         auto position = pose->mutable_position();
         auto orientation = pose->mutable_orientation();
+        
         position->set_x(T.at<double>(0, 3));
         position->set_y(T.at<double>(1, 3));
         position->set_z(T.at<double>(2, 3));
         orientation->set_pitch(pitch);
         orientation->set_yaw(yaw);
         orientation->set_roll(roll);
+        annotation->set_score(compute_score(tvecs[i][2]));
       }
     };
 

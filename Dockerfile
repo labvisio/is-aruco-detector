@@ -1,4 +1,4 @@
-FROM picoreti/is-cpp:1
+FROM git.is:5000/is-cpp:1
 ARG SERVICE=local
 COPY . ${SERVICE}
 RUN cd ${SERVICE} && \
