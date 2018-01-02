@@ -3,7 +3,7 @@ CXXFLAGS += -std=c++14
 LDFLAGS += -L/usr/local/lib -I/usr/local/include `pkg-config --libs protobuf librabbitmq libSimpleAmqpClient` \
 					-Wl,--no-as-needed -Wl,--as-needed -ldl -lboost_system -lboost_chrono -lboost_program_options \
 					-lopencv_imgproc -lopencv_core -lopencv_calib3d -lopencv_imgcodecs -lopencv_highgui -lopencv_aruco \
-					-lboost_filesystem -lismsgs
+					-lboost_filesystem -lismsgs -lprometheus-cpp -lopentracing -lzipkin -lzipkin_opentracing 
 PROTOC = protoc
 LOCAL_PROTOS_PATH = ./msgs/
 

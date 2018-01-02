@@ -76,9 +76,9 @@ cv::Mat cv_matrix_view(Tensor* tensor) {
 }
 
 int main(int argc, char** argv) {
-  std::string uri, service, calib_dir;
+  std::string uri, service, calib_dir, zipkin_host;
   float marker_length;
-  int dict_id;
+  int dict_id, zipkin_port;
 
   is::po::options_description opts("Options");
   auto&& opt_add = opts.add_options();
@@ -89,7 +89,14 @@ int main(int argc, char** argv) {
           "directory containing calibration files");
   opt_add("dictionary,d", is::po::value<int>(&dict_id)->default_value(0), "dictionary id");
   opt_add("marker-length,l", is::po::value<float>(&marker_length), "marker length");
+  opts.add_options()("zipkin-host,z",
+                     is::po::value<std::string>(&zipkin_host)->default_value("zipkin.default"),
+                     "zipkin hostname");
+  opts.add_options()("zipkin-port,p", is::po::value<int>(&zipkin_port)->default_value(9411),
+                     "zipkin port");
   is::parse_program_options(argc, argv, opts);
+
+  is::Tracer tracer(service, zipkin_host, zipkin_port);
 
   std::unordered_map<std::string, CameraCalibration> calibrations;
   if (marker_length > 0) calibrations = load_calibrations(calib_dir);
@@ -110,6 +117,8 @@ int main(int argc, char** argv) {
     if (!maybe_image) continue;
 
     auto start_time = is::current_time();
+    auto span = tracer.extract(envelope, "detection");
+
     std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
     auto image = cv::imdecode(coded, CV_LOAD_IMAGE_GRAYSCALE);
     auto id = parse_entity_id(envelope->RoutingKey());
@@ -185,8 +194,12 @@ int main(int argc, char** argv) {
     auto corners = annotate_image(image, &annotations);
     annotate_pose(corners, &annotations);
 
-    is::info("Took: {} ms", is::current_time() - start_time);
-    is::publish(channel, fmt::format("ArUco.{}.Detection", id), annotations);
+    auto msg = is::pack_proto(annotations);
+    tracer.inject(msg, span->context());
+    is::publish(channel, fmt::format("ArUco.{}.Detection", id), msg);
+
+    is::info("Took: {}", is::current_time() - start_time);
+    span->Finish();
   }
 
   return 0;
