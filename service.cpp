@@ -78,7 +78,7 @@ cv::Mat cv_matrix_view(Tensor* tensor) {
 int main(int argc, char** argv) {
   std::string uri, service, calib_dir, zipkin_host;
   float marker_length;
-  int dict_id, zipkin_port;
+  int dict_id, zipkin_port, parallelism;
 
   is::po::options_description opts("Options");
   auto&& opt_add = opts.add_options();
@@ -89,13 +89,14 @@ int main(int argc, char** argv) {
           "directory containing calibration files");
   opt_add("dictionary,d", is::po::value<int>(&dict_id)->default_value(0), "dictionary id");
   opt_add("marker-length,l", is::po::value<float>(&marker_length), "marker length");
-  opts.add_options()("zipkin-host,z",
-                     is::po::value<std::string>(&zipkin_host)->default_value("zipkin.default"),
-                     "zipkin hostname");
-  opts.add_options()("zipkin-port,p", is::po::value<int>(&zipkin_port)->default_value(9411),
-                     "zipkin port");
+  opt_add("parallelism", is::po::value<int>(&parallelism)->default_value(0), "number of threads");
+  opt_add("zipkin-host,z",
+          is::po::value<std::string>(&zipkin_host)->default_value("zipkin.default"),
+          "zipkin hostname");
+  opt_add("zipkin-port,p", is::po::value<int>(&zipkin_port)->default_value(9411), "zipkin port");
   is::parse_program_options(argc, argv, opts);
 
+  cv::setNumThreads(parallelism);
   is::Tracer tracer(service, zipkin_host, zipkin_port);
 
   std::unordered_map<std::string, CameraCalibration> calibrations;
@@ -155,11 +156,11 @@ int main(int argc, char** argv) {
                                            tvecs);
 
       assert(rvecs.size() == tvecs.size() && rvecs.size() == corners.size());
-      
-      auto c0 = 3.0; // lower limmit
-      auto c1 = 5.0; // uppper limmit
+
+      auto c0 = 3.0;  // lower limmit
+      auto c1 = 5.0;  // uppper limmit
       auto k = 1.0 / (c1 - c0);
-      auto compute_score = [&](auto z){return z < c0 ? 1.0 : std::max(k*(c1 -z), 0.0);};
+      auto compute_score = [&](auto z) { return z < c0 ? 1.0 : std::max(k * (c1 - z), 0.0); };
 
       for (int i = 0; i < corners.size(); ++i) {
         cv::Mat tf;
@@ -179,7 +180,7 @@ int main(int argc, char** argv) {
         auto pose = annotation->mutable_pose();
         auto position = pose->mutable_position();
         auto orientation = pose->mutable_orientation();
-        
+
         position->set_x(T.at<double>(0, 3));
         position->set_y(T.at<double>(1, 3));
         position->set_z(T.at<double>(2, 3));
