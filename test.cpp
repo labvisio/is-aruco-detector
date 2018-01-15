@@ -56,17 +56,33 @@ void draw_annotations(cv::Mat image, ImageAnnotations const& annotations) {
   }
 }
 
+void tile(const std::vector<cv::Mat>& src, cv::Mat& dst, int grid_x, int grid_y) {
+  // patch size
+  int width = dst.cols / grid_x;
+  int height = dst.rows / grid_y;
+  // iterate through grid
+  int k = 0;
+  for (int i = 0; i < grid_y; i++) {
+    for (int j = 0; j < grid_x; j++) {
+      cv::Mat s = src[k++];
+      cv::resize(s, s, cv::Size(width, height));
+      s.copyTo(dst(cv::Rect(j * width, i * height, width, height)));
+    }
+  }
+}
+
 int main(int argc, char** argv) {
   std::string uri;
-  float scale;
-  int draw_fps;
+  int height, width, per_line, draw_fps;
 
   is::po::options_description opts("Options");
   auto&& opt_add = opts.add_options();
   opt_add("uri,u", is::po::value<std::string>(&uri)->required(), "broker uri");
-  opt_add("scale,s", is::po::value<float>(&scale)->default_value(1.0f), "scale");
   opt_add("draw-fps,f", is::po::value<int>(&draw_fps)->default_value(10),
-          "fps that images will be drawn");
+          "rate that frames will be drawn");
+  opt_add("per-line,p", is::po::value<int>(&per_line)->default_value(2), "frames per line");
+  opt_add("width,w", is::po::value<int>(&width)->default_value(1288), "width of displayed image");
+  opt_add("height,h", is::po::value<int>(&height)->default_value(728), "height of displayed image");
   is::parse_program_options(argc, argv, opts);
 
   auto channel = is::rmq::Channel::CreateFromUri(uri);
@@ -74,9 +90,10 @@ int main(int argc, char** argv) {
   std::vector<std::string> topics = {"CameraGateway.*.Frame", "ArUco.*.Detection"};
   is::subscribe(channel, tag, topics);
 
-  std::unordered_map<std::string, std::tuple<cv::Mat, ImageAnnotations>> map;
+  std::unordered_map<std::string, is::rmq::Envelope::ptr_t> frames, annotations;
   auto draw_deadline =
       is::current_time() + is::pb::TimeUtil::MillisecondsToDuration(1000 / draw_fps);
+
   for (;;) {
     for (;;) {
       auto envelope = is::consume_until(channel, draw_deadline);
@@ -86,30 +103,32 @@ int main(int argc, char** argv) {
       std::tie(id, subtopic) = parse_topic(topic);
 
       if (subtopic == "Frame") {
-        auto maybe_image = is::unpack<Image>(envelope);
-        std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
-        auto image = cv::imdecode(coded, CV_LOAD_IMAGE_COLOR);
-        std::get<0>(map[id]) = image;
+        frames[id] = envelope;
       } else if (subtopic == "Detection") {
-        auto maybe_annotations = is::unpack<ImageAnnotations>(envelope);
-        std::get<1>(map[id]) = *maybe_annotations;
+        annotations[id] = envelope;
       }
     }
 
-    std::vector<cv::Mat> resized;
-    for (auto keyvalue : map) {
-      cv::Mat image;
-      ImageAnnotations annotations;
-      std::tie(image, annotations) = keyvalue.second;
-      draw_annotations(image, annotations);
-      cv::resize(image, image, cv::Size(image.cols * scale, image.rows * scale));
-      resized.push_back(image);
+    std::vector<cv::Mat> images;
+    images.reserve(frames.size());
+    for (auto keyval : frames) {
+      auto it = annotations.find(keyval.first);
+      if (it != annotations.end()) {
+        auto maybe_image = is::unpack<Image>(keyval.second);
+        std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
+        auto image = cv::imdecode(coded, CV_LOAD_IMAGE_COLOR);
+
+        auto maybe_annotations = is::unpack<ImageAnnotations>(it->second);
+        draw_annotations(image, *maybe_annotations);
+
+        images.push_back(image);
+      }
     }
 
-    if (!resized.empty()) {
-      cv::Mat image;
-      cv::hconcat(resized, image);
-      cv::imshow("Detections", image);
+    if (images.size() >= per_line) {
+      cv::Mat display = cv::Mat(height, width, CV_8UC3);
+      tile(images, display, per_line, images.size() / per_line);
+      cv::imshow("Detections", display);
       cv::waitKey(1);
     }
 
