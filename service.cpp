@@ -113,12 +113,14 @@ int main(int argc, char** argv) {
 
   for (;;) {
     auto envelope = channel->BasicConsumeMessage();
-    channel->BasicAck(envelope);
-    auto maybe_image = is::unpack<Image>(envelope);
-    if (!maybe_image) continue;
 
     auto start_time = is::current_time();
-    auto span = tracer.extract(envelope, "detection");
+    auto span = tracer.extract(envelope, tag);
+
+    auto maybe_image = is::unpack<Image>(envelope);
+    if (!maybe_image) {
+      continue;
+    }
 
     std::vector<char> coded(maybe_image->data().begin(), maybe_image->data().end());
     auto image = cv::imdecode(coded, CV_LOAD_IMAGE_GRAYSCALE);
@@ -199,8 +201,9 @@ int main(int argc, char** argv) {
     tracer.inject(msg, span->context());
     is::publish(channel, fmt::format("ArUco.{}.Detection", id), msg);
 
-    is::info("Took: {}", is::current_time() - start_time);
     span->Finish();
+    channel->BasicAck(envelope);
+    is::info("Took: {}", is::current_time() - start_time);
   }
 
   return 0;
