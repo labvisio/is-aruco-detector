@@ -1,23 +1,25 @@
-# Build container
-FROM viros/is-cpp:1
-ARG SERVICE=local
-WORKDIR /opt
-COPY . .
-RUN make release                                                \
- && mkdir deploy                                                \
- && mv ${SERVICE} deploy/service                                \
- && libs=`ldd deploy/service                                    \
-    | awk 'BEGIN{ORS=" "}$1~/^\//{print $1}$3~/^\//{print $3}'  \
-    | sed 's/,$/\n/'`                                           \
- && for lib in $libs;                                           \
-    do                                                          \  
-      dir="deploy`dirname $lib`";                               \
-      mkdir -v -p  $dir;                                        \
-      cp --verbose $lib $dir;                                   \
-    done
+FROM ubuntu:16.04 as build
+ADD bootstrap.sh .
+ADD conanfile.py .
+RUN ./bootstrap.sh 
+RUN conan install . -s compiler.libcxx=libstdc++11 --build=missing
 
-# Deployment container
-FROM scratch
-ENV LD_LIBRARY_PATH=/usr/local/lib
-COPY --from=0 /opt/deploy/ /
-CMD ["/service"]
+ADD . /project
+RUN cd /project                                                         \
+ && ./build.sh                                                          \
+ && mkdir -v -p /tmp/is/lib /tmp/is/bin                                 \
+ && libs=`find build/ -type f -name '*.bin' -exec ldd {} \;             \
+    | cut -d '(' -f 1 | cut -d '>' -f 2 | sort | uniq`                  \
+ && for lib in $libs;                                                   \
+    do                                                                  \
+      dir="/tmp/is/lib`dirname $lib`";                                  \
+      mkdir -v -p  $dir;                                                \
+      cp --verbose $lib $dir;                                           \
+    done                                                                \
+ && cp --verbose `find build/ -type f -name '*.bin'` /tmp/is/bin/
+
+
+FROM ubuntu:16.04
+COPY --from=build /tmp/is/lib/ /
+COPY --from=build /tmp/is/bin/ /
+COPY --from=build /project/options.json /
