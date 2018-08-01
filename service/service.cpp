@@ -24,12 +24,12 @@ auto process_images(is::Message const& message, is::Channel channel, is::Aruco c
     if (maybe_image) {
       auto id = std::stoi(matches[1]);
 
-      is::vision::ImageAnnotations annotations;
+      is::vision::ObjectAnnotations annotations;
       try {
         annotations = aruco.detect(*maybe_image);
         channel.publish(fmt::format("ArUco.{}.Detection", id), is::Message{annotations});
       } catch (...) { is::warn("Detector throwed exception"); }
-      detection_span->SetTag("Detections", annotations.annotations().size());
+      detection_span->SetTag("Detections", annotations.objects().size());
       detection_span->Finish();
 
       auto localization_span =

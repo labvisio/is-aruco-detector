@@ -37,7 +37,7 @@ spec:
         resources:
           limits: 
             cpu: "1.0"
-            memory: 128Mi
+            memory: 256Mi
         volumeMounts:
           - name: options
             mountPath: /opt
@@ -48,3 +48,24 @@ spec:
           items:
           - key: config
             path: options.json
+
+---
+
+
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: is-aruco
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: is-aruco
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 75

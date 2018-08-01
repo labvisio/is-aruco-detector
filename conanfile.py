@@ -11,7 +11,7 @@ class ArucoLocalizationServiceConan(ConanFile):
     options = {"shared": [True, False], "fPIC": [True, False], "build_tests": [True, False]}
     default_options = "shared=False", "fPIC=True", "build_tests=False"
     generators = "cmake", "cmake_find_package", "cmake_paths"
-    requires = ("is-wire/[>=1.1.2]@is/stable", "is-msgs/[>=1.1.6]@is/stable",
+    requires = ("is-wire/[>=1.1.2]@is/stable", "is-msgs/[>=1.1.7]@is/stable",
                 "opencv/[>=3.3]@is/stable", "zipkin-cpp-opentracing/0.3.1@is/stable")
     exports_sources = "*"
 

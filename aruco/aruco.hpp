@@ -23,9 +23,9 @@ class Aruco {
  public:
   Aruco(int dict, std::unordered_map<int64_t, float> const& lengths);
 
-  auto detect(vision::Image const& image) const -> vision::ImageAnnotations;
+  auto detect(vision::Image const& image) const -> vision::ObjectAnnotations;
 
-  auto localize(vision::ImageAnnotations const& annotations,
+  auto localize(vision::ObjectAnnotations const& annotations,
                 vision::CameraCalibration& calibration) const
       -> std::vector<vision::FrameTransformation>;
 };

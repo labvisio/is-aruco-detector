@@ -10,7 +10,7 @@ Aruco::Aruco(int dict, std::unordered_map<int64_t, float> const& len) {
   lengths = len;
 }
 
-auto Aruco::detect(vision::Image const& img) const -> vision::ImageAnnotations {
+auto Aruco::detect(vision::Image const& img) const -> vision::ObjectAnnotations {
   std::vector<char> coded(img.data().begin(), img.data().end());
   auto image = cv::imdecode(coded, CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -18,9 +18,9 @@ auto Aruco::detect(vision::Image const& img) const -> vision::ImageAnnotations {
   std::vector<std::vector<cv::Point2f>> corners;
   cv::aruco::detectMarkers(image, dictionary, corners, ids, parameters);
 
-  auto annotations = vision::ImageAnnotations{};
+  auto annotations = vision::ObjectAnnotations{};
   for (int i = 0; i < ids.size(); ++i) {
-    auto annotation = annotations.add_annotations();
+    auto annotation = annotations.add_objects();
     annotation->set_label(std::to_string(ids[i]));
     annotation->set_id(ids[i]);
     for (auto&& point : corners[i]) {
@@ -36,7 +36,7 @@ auto Aruco::detect(vision::Image const& img) const -> vision::ImageAnnotations {
   return annotations;
 }
 
-auto Aruco::localize(vision::ImageAnnotations const& anno,
+auto Aruco::localize(vision::ObjectAnnotations const& anno,
                      vision::CameraCalibration& calibration) const
     -> std::vector<vision::FrameTransformation> {
   auto sx = anno.resolution().width() / static_cast<double>(calibration.resolution().width());
@@ -46,9 +46,9 @@ auto Aruco::localize(vision::ImageAnnotations const& anno,
   auto distortion = to_mat_view(calibration.mutable_distortion());
 
   std::vector<vision::FrameTransformation> poses;
-  poses.reserve(anno.annotations().size());
+  poses.reserve(anno.objects().size());
 
-  for (auto const& annotation : anno.annotations()) {
+  for (auto const& annotation : anno.objects()) {
     auto vertices = annotation.region().vertices();
     if (vertices.size() != 4) continue;
 
