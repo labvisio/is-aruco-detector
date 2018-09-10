@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: service 
-        image: viros/is-aruco:0.0.2
+        image: viros/is-aruco:0.0.3
         command: ["/service.bin"]
         args: ["/opt/options.json"]
         imagePullPolicy: Always

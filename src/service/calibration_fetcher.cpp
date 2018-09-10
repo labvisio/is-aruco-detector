@@ -1,5 +1,5 @@
 #include "calibration_fetcher.hpp"
-#include "google/protobuf/repeated_field.h"
+#include <google/protobuf/repeated_field.h>
 
 namespace is {
 
@@ -17,17 +17,18 @@ auto CalibrationFetcher::eval(Message const& message, Channel const& channel,
   auto is_reply = message.has_correlation_id() && message.correlation_id() == correlation_id;
 
   if (is_reply) {
-    if (message.status().code() == is::wire::StatusCode::OK) {
+    if (message.status().ok()) {
       auto reply = message.unpack<vision::GetCalibrationReply>();
       if (reply) {
         for (auto&& calibration : reply->calibrations()) {
           calibrations[calibration.id()] = calibration;
           camera_ids.erase(calibration.id());
-          is::info("[CalibrationFetcher] Updating calibration\n {}", calibration);
+          is::info("event=CalibrationFetcher.Updated id={}", calibration.id());
         }
       }
     } else {
-      is::info("[CalibrationFetcher] RPC Failed {}", message.status());
+      is::info("event=CalibrationFetcher.RPCFailed code={} why={}", message.status().code(),
+               message.status().why());
     }
   }
 
@@ -39,12 +40,12 @@ auto CalibrationFetcher::eval(Message const& message, Channel const& channel,
       request.mutable_ids()->Reserve(camera_ids.size());
       std::copy(camera_ids.begin(), camera_ids.end(),
                 google::protobuf::RepeatedFieldBackInserter(request.mutable_ids()));
-      is::info("[CalibrationFetcher] Requesting Calibrations: {}", request);
+      is::info("event=CalibrationFetcher.Requesting request={}", request);
 
       auto message = is::Message{request};
       message.set_reply_to(subscription).set_deadline(timeout);
       correlation_id = message.correlation_id();
-      channel.publish("FrameConversion.GetCalibration", message);
+      channel.publish("FrameTransformation.GetCalibration", message);
     }
   }
 

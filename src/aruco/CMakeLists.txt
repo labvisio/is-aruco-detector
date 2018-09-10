@@ -9,6 +9,7 @@ include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
 find_package(is-msgs REQUIRED)
 find_package(opencv REQUIRED)
+find_package(fmt REQUIRED)
 
 set(author "is")
 set(module "aruco")
@@ -40,13 +41,14 @@ target_link_libraries(
  PUBLIC
   is-msgs::is-msgs
   opencv::opencv
+  fmt::fmt
 )
 
 # header dependencies
 target_include_directories(
   ${target}
  PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}> # for headers when building
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/..> # for headers when building
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> # for generated files in build mode
   $<INSTALL_INTERFACE:include/${include_dir}> # for clients in install mode
 )

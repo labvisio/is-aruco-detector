@@ -1,6 +1,5 @@
 #include "aruco.hpp"
-#include <iostream>
-
+#include <fmt/format.h>
 namespace is {
 
 Aruco::Aruco(int dict, std::unordered_map<int64_t, float> const& len) {
@@ -16,7 +15,10 @@ auto Aruco::detect(vision::Image const& img) const -> vision::ObjectAnnotations 
 
   std::vector<int> ids;
   std::vector<std::vector<cv::Point2f>> corners;
-  cv::aruco::detectMarkers(image, dictionary, corners, ids, parameters);
+
+  try {
+    cv::aruco::detectMarkers(image, dictionary, corners, ids, parameters);
+  } catch (...) { fmt::print("Detector throwed exception"); }
 
   auto annotations = vision::ObjectAnnotations{};
   for (int i = 0; i < ids.size(); ++i) {
@@ -37,16 +39,16 @@ auto Aruco::detect(vision::Image const& img) const -> vision::ObjectAnnotations 
 }
 
 auto Aruco::localize(vision::ObjectAnnotations const& anno,
-                     vision::CameraCalibration& calibration) const
-    -> std::vector<vision::FrameTransformation> {
+                     vision::CameraCalibration& calibration) const -> vision::FrameTransformations {
   auto sx = anno.resolution().width() / static_cast<double>(calibration.resolution().width());
   auto sy = anno.resolution().height() / static_cast<double>(calibration.resolution().height());
   cv::Mat scale = (cv::Mat_<double>(3, 3) << sx, 0, 0, 0, sy, 0, 0, 0, 1);
   auto intrinsic = scale * to_mat_view(calibration.mutable_intrinsic());
   auto distortion = to_mat_view(calibration.mutable_distortion());
 
-  std::vector<vision::FrameTransformation> poses;
-  poses.reserve(anno.objects().size());
+  vision::FrameTransformations transformations;
+  auto tfs = transformations.mutable_tfs();
+  tfs->Reserve(anno.objects().size());
 
   for (auto const& annotation : anno.objects()) {
     auto vertices = annotation.region().vertices();
@@ -72,15 +74,13 @@ auto Aruco::localize(vision::ObjectAnnotations const& anno,
     cv::Mat lastRow = (cv::Mat_<double>(1, 4) << 0, 0, 0, 1);
     cv::vconcat(tf, lastRow, tf);
 
-    vision::FrameTransformation transformation;
-    transformation.set_from(100 + marker_id);
-    transformation.set_to(calibration.id());
-    *transformation.mutable_tf() = to_tensor(tf);
-
-    poses.push_back(transformation);
+    auto transformation = tfs->Add();
+    transformation->set_from(100 + marker_id);
+    transformation->set_to(calibration.id());
+    *transformation->mutable_tf() = to_tensor(tf);
   }
 
-  return poses;
+  return transformations;
 }
 
 }  // namespace is
