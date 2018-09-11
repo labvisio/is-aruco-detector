@@ -29,6 +29,8 @@ class ArucoLocalizationServiceConan(ConanFile):
 
     def configure(self):
         self.options["is-msgs"].shared = True
+        self.options["opencv"].shared = True
+        self.options["opencv"].with_qt = False
 
     def build(self):
         cmake = CMake(self, generator='Ninja')

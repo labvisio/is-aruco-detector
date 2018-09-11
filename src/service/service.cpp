@@ -27,7 +27,6 @@ auto process_images(is::Message const& message, is::Channel channel, is::Aruco c
       auto id = std::stoi(matches[1]);
 
       is::vision::ObjectAnnotations annotations = aruco.detect(*maybe_image);
-
       auto maybe_calibration = fetcher.find(id);
       if (maybe_calibration) {
         auto transformations = aruco.localize(annotations, *maybe_calibration);
@@ -81,6 +80,7 @@ int main(int argc, char** argv) {
   auto aruco = is::Aruco{aruco_config.dictionary(),
                          std::unordered_map<int64_t, float>{aruco_config.lengths().begin(),
                                                             aruco_config.lengths().end()}};
+  aruco.set_cpu_parallelism(aruco_config.cpu_parallelism());
 
   auto rpcs = is::Subscription{channel};
   auto fetcher = is::CalibrationFetcher{};

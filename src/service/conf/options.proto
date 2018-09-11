@@ -24,6 +24,8 @@ message ArucoSettings {
   ArucoDictionary dictionary = 1;
   // mapping between marker id and length
   map<int64, float> lengths = 2;
+  // number of cpu threads to be used
+  int32 cpu_parallelism = 3;
 }
 
 message ArucoServiceOptions {

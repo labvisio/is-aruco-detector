@@ -1,5 +1,7 @@
 #include "aruco.hpp"
 #include <fmt/format.h>
+#include <is/msgs/utils.hpp>
+
 namespace is {
 
 Aruco::Aruco(int dict, std::unordered_map<int64_t, float> const& len) {
@@ -10,17 +12,23 @@ Aruco::Aruco(int dict, std::unordered_map<int64_t, float> const& len) {
 }
 
 auto Aruco::detect(vision::Image const& img) const -> vision::ObjectAnnotations {
+  auto annotations = vision::ObjectAnnotations{};
+
   std::vector<char> coded(img.data().begin(), img.data().end());
   auto image = cv::imdecode(coded, CV_LOAD_IMAGE_GRAYSCALE);
+  if (image.empty()) {
+    fmt::print("Aruco::detect, Empty image error\n");
+    return annotations;
+  }
 
   std::vector<int> ids;
   std::vector<std::vector<cv::Point2f>> corners;
-
   try {
     cv::aruco::detectMarkers(image, dictionary, corners, ids, parameters);
-  } catch (...) { fmt::print("Detector throwed exception"); }
+  } catch (cv::Exception const& e) {
+    fmt::print("Aruco::detect, Throwed exception what={}\n", e.what());
+  } catch (...) { fmt::print("Aruco::detect, Unknown exception\n"); }
 
-  auto annotations = vision::ObjectAnnotations{};
   for (int i = 0; i < ids.size(); ++i) {
     auto annotation = annotations.add_objects();
     annotation->set_label(std::to_string(ids[i]));
@@ -81,6 +89,14 @@ auto Aruco::localize(vision::ObjectAnnotations const& anno,
   }
 
   return transformations;
+}
+
+void Aruco::set_cpu_parallelism(int threads) const {
+  cv::setNumThreads(threads);
+}
+
+auto cpu_parallelism() const -> int {
+  return cv::getNumThreads();
 }
 
 }  // namespace is

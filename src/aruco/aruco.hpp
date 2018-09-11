@@ -27,6 +27,9 @@ class Aruco {
 
   auto localize(vision::ObjectAnnotations const& annotations,
                 vision::CameraCalibration& calibration) const -> vision::FrameTransformations;
+
+  void set_cpu_parallelism(int threads) const;
+  auto cpu_parallelism() const -> int;
 };
 
 }  // namespace is
