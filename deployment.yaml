@@ -9,6 +9,7 @@ data:
       "broker_uri": "amqp://rabbitmq.default",
       "zipkin_uri": "http://zipkin.default",
       "config": {
+        "cpu_parallelism": 0,
         "dictionary": "DICT_4X4_50",
         "lengths": {
           "0": 0.660

@@ -95,7 +95,7 @@ void Aruco::set_cpu_parallelism(int threads) const {
   cv::setNumThreads(threads);
 }
 
-auto cpu_parallelism() const -> int {
+auto Aruco::cpu_parallelism() const -> int {
   return cv::getNumThreads();
 }
 
