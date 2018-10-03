@@ -22,4 +22,3 @@ RUN cd /project                                                         \
 FROM ubuntu:16.04
 COPY --from=build /tmp/is/lib/ /
 COPY --from=build /tmp/is/bin/ /
-COPY --from=build /project/options.json /

@@ -7,5 +7,5 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
-add_subdirectory("./src/aruco")
-add_subdirectory("./src/service")
+add_subdirectory("./src/is/aruco")
+add_subdirectory("./src/is/aruco-service")

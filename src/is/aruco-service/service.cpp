@@ -7,7 +7,7 @@
 #include <regex>
 #include <unordered_map>
 #include "aruco/aruco.hpp"
-#include "calibration_fetcher.hpp"
+#include "calibration-fetcher.hpp"
 #include "conf/options.pb.h"
 
 auto process_images(is::Message const& message, is::Channel channel, is::Aruco const& aruco,

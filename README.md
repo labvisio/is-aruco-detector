@@ -1,20 +1,20 @@
 ArUco Marker Detection Service
 ==================
 
-ArUco marker localization/detection service.
+ArUco marker localization and detection service. 
 
 Streams
 -----------
 
 | Name | Input (Topic/Message) | Output (Topic/Message) | Description | 
 | ---- | --------------------- | ---------------------- | ----------- |
-| ArUco.Localization | **CameraGateway.(ID).Frame** [Image] | **ArUco.(ID).FrameTransformations** [FrameTransformations] | Localize markers on the world in relation to the respective camera frame an publishes a FrameTransformations messsage with each marker localized. The marker frame id is calculated as ArUcoMarkerID + 100. |
-| ArUco.Detection | **CameraGateway.(ID).Frame** [Image] | **ArUco.(ID).Detection** [ImageAnnotations] | Detect markers on images published by cameras an publishes a single ImageAnnotations message containing all the detected markers. |
+| ArUco.Localization | **CameraGateway.(ID).Frame** [Image] | **ArUco.(ID).FrameTransformations** [FrameTransformations] | Localize markers on the world in relation to the respective camera frame an publishes a FrameTransformations messsage with each marker localized. **The marker frame id is calculated as ArUcoMarkerID + 100**. |
+| ArUco.Localization | **CameraGateway.(ID).Frame** [Image] | **ArUco.(ID).Detection** [ObjectAnnotations] | Detect markers on images published by cameras an publishes a ObjectAnnotations message containing all the detected markers. |
 
 
 [Image]: https://github.com/labviros/is-msgs/blob/modern-cmake/docs/README.md#is.vision.Image
 [FrameTransformations]: https://github.com/labviros/is-msgs/blob/modern-cmake/docs/README.md#is.vision.FrameTransformations
-[ImageAnnotations]: https://github.com/labviros/is-msgs/blob/modern-cmake/docs/README.md#is.vision.ImageAnnotations
+[ObjectAnnotations]: https://github.com/labviros/is-msgs/tree/v1.1.8/docs#is.vision.ObjectAnnotations
 
 
 About

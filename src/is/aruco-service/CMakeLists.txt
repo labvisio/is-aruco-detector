@@ -13,8 +13,8 @@ add_executable(service.bin
  service.cpp
  ${options_src}
  ${options_hdr}
- calibration_fetcher.cpp
- calibration_fetcher.hpp
+ calibration-fetcher.cpp
+ calibration-fetcher.hpp
 )
 
 target_link_libraries(
