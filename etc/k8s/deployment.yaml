@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: is-aruco-config
+  name: is-aruco-detector-config
   namespace: default
 data:
   config: |-
@@ -21,17 +21,17 @@ data:
 apiVersion: extensions/v1beta1 
 kind: Deployment
 metadata:
-  name: "is-aruco"
+  name: "is-aruco-detector"
 spec:
   replicas: 4
   template:
     metadata:
       labels:
-        app: is-aruco
+        app: is-aruco-detector
     spec:
       containers:
       - name: service 
-        image: viros/is-aruco:0.0.3
+        image: labviros/is-aruco-detector:0.0.3
         command: ["/service.bin"]
         args: ["/opt/options.json"]
         imagePullPolicy: Always
@@ -45,7 +45,7 @@ spec:
       volumes:
       - name: options
         configMap:
-          name: is-aruco-config
+          name: is-aruco-detector-config
           items:
           - key: config
             path: options.json
@@ -56,13 +56,13 @@ spec:
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: is-aruco
+  name: is-aruco-detector
   namespace: default
 spec:
   scaleTargetRef:
     apiVersion: extensions/v1beta1
     kind: Deployment
-    name: is-aruco
+    name: is-aruco-detector
   minReplicas: 1
   maxReplicas: 8
   metrics:
