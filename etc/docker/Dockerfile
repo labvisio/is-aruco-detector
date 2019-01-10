@@ -1,4 +1,4 @@
-FROM labviros/is-wire-base:1.1.4-gcc54 as build
+FROM labviros/is-wire-base:1.1.5-gcc54 as build
 
 ADD conanfile.py .
 RUN conan install . -s compiler.libcxx=libstdc++11 --build=missing

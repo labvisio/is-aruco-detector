@@ -74,7 +74,6 @@ int main(int argc, char** argv) {
 
   auto images = is::Subscription{channel, "ArUco.Localization"};
   images.subscribe("CameraGateway.*.Frame");
-  auto server = is::ServiceProvider{channel};
 
   auto aruco_config = options.config();
   auto aruco = is::Aruco{aruco_config.dictionary(),
@@ -85,10 +84,27 @@ int main(int argc, char** argv) {
   auto rpcs = is::Subscription{channel};
   auto fetcher = is::CalibrationFetcher{};
 
-  for (;;) {
-    auto message = channel.consume();
+  auto eval_message = [&](is::Message message) {
     auto ok = fetcher.eval(message, channel, rpcs);
     if (!ok) ok = process_images(message, channel, aruco, fetcher, tracer);
-    if (!ok) ok = server.serve(message);
+  };
+
+  for (;;) {
+    auto messages = channel.consume_ready();
+    if (messages.empty()) {
+      eval_message(channel.consume());
+    } else {
+      auto middle = std::stable_partition(messages.begin(), messages.end(), [&](is::Message& msg) {
+        return msg.subscription_id() == rpcs.name();
+      });
+      // rpcs' messages
+      std::for_each(messages.begin(), middle, eval_message);
+      // images' messages
+      if (middle != messages.end()) {
+        auto dropped = std::distance(middle, messages.end()) - 1;
+        if (dropped > 0) is::warn("event=ArUco.Consume dropped={}", dropped);
+        eval_message(messages.back());
+      }
+    }
   }
 }

@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: service 
-        image: labviros/is-aruco-detector:0.0.3
+        image: labviros/is-aruco-detector:0.0.4
         command: ["/service.bin"]
         args: ["/opt/options.json"]
         imagePullPolicy: Always

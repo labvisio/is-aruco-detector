@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class ArucoLocalizationServiceConan(ConanFile):
     name = "is-aruco-localization"
-    version = "0.0.3"
+    version = "0.0.4"
     license = "MIT"
     url = ""
     description = ""
@@ -16,8 +16,8 @@ class ArucoLocalizationServiceConan(ConanFile):
     default_options = "shared=False", "fPIC=True", "build_tests=False"
     generators = "cmake", "cmake_find_package", "cmake_paths"
     requires = (
-        "is-wire/1.1.4@is/stable",
-        "is-msgs/1.1.8@is/stable",
+        "is-wire/1.1.5@is/stable",
+        "is-msgs/1.1.10@is/stable",
         "opencv/3.4.2@is/stable",
         "zipkin-cpp-opentracing/0.3.1@is/stable",
     )
