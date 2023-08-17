@@ -1,6 +1,11 @@
 ArUco Marker Detection Service
 ==================
 
+[![Docker image tag](https://img.shields.io/docker/v/labvisio/is-aruco-detector?sort=semver&style=flat-square)](https://hub.docker.com/r/labvisio/is-aruco-detector/tags)
+[![Docker image size](https://img.shields.io/docker/image-size/labvisio/is-aruco-detector?sort=semver&style=flat-square)](https://hub.docker.com/r/labvisio/is-aruco-detector)
+[![Docker pulls](https://img.shields.io/docker/pulls/labvisio/is-aruco-detector?style=flat-square)](https://hub.docker.com/r/labvisio/is-aruco-detector)
+
+
 ArUco marker localization and detection service. 
 
 Dependencies:
