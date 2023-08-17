@@ -15,7 +15,7 @@ auto Aruco::detect(vision::Image const& img) const -> vision::ObjectAnnotations 
   auto annotations = vision::ObjectAnnotations{};
 
   std::vector<char> coded(img.data().begin(), img.data().end());
-  auto image = cv::imdecode(coded, CV_LOAD_IMAGE_GRAYSCALE);
+  auto image = cv::imdecode(coded, cv::IMREAD_GRAYSCALE);
   if (image.empty()) {
     fmt::print("Aruco::detect, Empty image error\n");
     return annotations;
