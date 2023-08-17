@@ -1,17 +1,17 @@
 #pragma once
 
-#include <algorithm>
-#include <string>
-#include <unordered_map>
-#include <vector>
 #include <is/msgs/camera.pb.h>
 #include <is/msgs/common.pb.h>
-#include <is/msgs/cv.hpp>
 #include <is/msgs/image.pb.h>
+#include <algorithm>
+#include <is/msgs/cv.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace is {
 
