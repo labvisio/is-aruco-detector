@@ -9,20 +9,30 @@ data:
       "broker_uri": "amqp://rabbitmq.default",
       "zipkin_uri": "http://zipkin.default",
       "config": {
-        "cpu_parallelism": 0,
+        "cpu_parallelism": 2,
         "dictionary": "DICT_4X4_50",
         "lengths": {
-          "0": 0.660
+          "0": 0.17,
+          "1": 0.17,
+          "2": 0.17,
+          "3": 0.17,
+          "4": 0.17,
+          "5": 0.17,
+          "6": 0.17,
+          "7": 0.40,
         }
       }
     }
 ---
 
-apiVersion: extensions/v1beta1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "is-aruco-detector"
 spec:
+  selector:
+    matchLabels:
+      app: is-aruco-detector
   replicas: 4
   template:
     metadata:
@@ -31,7 +41,7 @@ spec:
     spec:
       containers:
       - name: service 
-        image: labviros/is-aruco-detector:0.0.4
+        image: labvisio/is-aruco-detector:0.0.5
         command: ["/service.bin"]
         args: ["/opt/options.json"]
         imagePullPolicy: Always
@@ -53,20 +63,20 @@ spec:
 ---
 
 
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: is-aruco-detector
-  namespace: default
-spec:
-  scaleTargetRef:
-    apiVersion: extensions/v1beta1
-    kind: Deployment
-    name: is-aruco-detector
-  minReplicas: 1
-  maxReplicas: 8
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      targetAverageUtilization: 75
+# apiVersion: autoscaling/v2beta1
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: is-aruco-detector
+#   namespace: default
+# spec:
+#   scaleTargetRef:
+#     apiVersion: extensions/v1beta1
+#     kind: Deployment
+#     name: is-aruco-detector
+#   minReplicas: 1
+#   maxReplicas: 8
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       targetAverageUtilization: 75

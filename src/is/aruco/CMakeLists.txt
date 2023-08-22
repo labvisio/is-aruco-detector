@@ -5,10 +5,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-
 find_package(is-msgs REQUIRED)
-find_package(opencv REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(fmt REQUIRED)
 
 set(author "is")

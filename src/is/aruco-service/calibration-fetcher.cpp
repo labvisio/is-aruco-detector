@@ -3,6 +3,11 @@
 
 namespace is {
 
+static constexpr auto fetch_interval = std::chrono::seconds(2);
+
+CalibrationFetcher::CalibrationFetcher()
+    : timeout(std::chrono::system_clock::now() + fetch_interval) {}
+
 auto CalibrationFetcher::find(int64_t camera_id) -> boost::optional<vision::CameraCalibration> {
   auto it = calibrations.find(camera_id);
   if (it == calibrations.end()) {
